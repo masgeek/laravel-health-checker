@@ -26,5 +26,5 @@ jobs:
           assignee: ${{ github.actor }}
           target_branch: main
           label: automatic,release
-          new_string: ${{ github.event.commits[0].message }}
+          new_string: ${{ github.event.head_commit.message || github.sha }}
           get_diff: true
