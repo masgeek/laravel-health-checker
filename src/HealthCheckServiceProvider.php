@@ -9,8 +9,14 @@ class HealthCheckServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        $this->publishConfig();
-        $this->loadRoutes();
+
+
+        $this->publishes([
+            __DIR__ . '/config/healthcheck.php' => $this->app->configPath('healthcheck.php'),
+        ], 'healthcheck-config');
+
+
+        $this->loadRoutesFrom(__DIR__ . '/routes/web.php');
 
         if ($this->app->runningInConsole()) {
             $this->commands([
@@ -21,36 +27,9 @@ class HealthCheckServiceProvider extends ServiceProvider
 
     public function register(): void
     {
-        $this->mergeConfig();
-    }
-
-    protected function publishConfig(): void
-    {
-        $this->publishes([
-            $this->packageConfigPath() => $this->app->configPath('healthcheck.php'),
-        ], 'config');
-    }
-
-    protected function loadRoutes(): void
-    {
-        $this->loadRoutesFrom($this->packagePath('routes/web.php'));
-    }
-
-    protected function mergeConfig(): void
-    {
         $this->mergeConfigFrom(
-            $this->packageConfigPath(),
+            __DIR__ . '/config/healthcheck.php',
             'healthcheck'
         );
-    }
-
-    protected function packageConfigPath(): string
-    {
-        return $this->packagePath('config/healthcheck.php');
-    }
-
-    protected function packagePath(string $relative): string
-    {
-        return __DIR__ . '/../' . ltrim($relative, '/');
     }
 }
