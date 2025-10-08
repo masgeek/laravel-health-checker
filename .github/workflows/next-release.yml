@@ -19,7 +19,8 @@ jobs:
       - name: Create pull request
         uses: devops-infra/action-pull-request@v0.6.1
         with:
-          github_token: ${{ secrets.PAT_WITH_WORKFLOW_SCOPE }}
+          #github_token: ${{ secrets.PAT_WITH_WORKFLOW_SCOPE }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           title: 'Next release'
           reviewer: ${{ github.actor }}
           assignee: ${{ github.actor }}
