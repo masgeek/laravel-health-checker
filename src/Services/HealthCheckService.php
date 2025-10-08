@@ -15,7 +15,10 @@ class HealthCheckService
 {
     public function run(): array
     {
-        $enabledChecks = config('healthcheck.checks', []);
+        $enabledChecks = collect([
+            'core' => config('healthcheck.core', []),
+            'infrastructure' => config('healthcheck.infrastructure', []),
+        ])->flatMap(fn($group) => $group);
 
         $availableChecks = [
             'env-config' => fn() => $this->checkEnvironmentConfig(),
