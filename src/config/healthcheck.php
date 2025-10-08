@@ -9,7 +9,7 @@ return [
     */
     'checks' => [
         'database' => true,
-        'redis' => true,
+        'redis' => false,
         'cache' => true,
         'storage' => true,
         'queue' => true,
@@ -17,7 +17,7 @@ return [
         'disk-space' => true,
         'migrations' => true,
         'env-config' => true,
-        'loki' => true,
+        'loki' => false,
         'logging' => true,
     ],
 
