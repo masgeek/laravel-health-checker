@@ -213,7 +213,9 @@ class HealthCheckService
     }
 
 
-    /** @noinspection SqlResolve */
+    /** @noinspection SqlResolve
+     * @noinspection SqlNoDataSourceInspection
+     */
     private function checkMigrations(): array
     {
         $pendingMigrations = DB::select('SELECT * FROM migrations');
