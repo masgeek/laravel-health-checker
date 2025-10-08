@@ -3,7 +3,6 @@
   "description": "Laravel health checker helper",
   "type": "library",
   "license": "MIT",
-  "version": "1.0.0",
   "autoload": {
     "psr-4": {
       "Masgeek\\HealthCheck\\": "src/"
