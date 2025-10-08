@@ -7,6 +7,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Storage;
@@ -289,6 +290,8 @@ class HealthCheckService
             $logPath = storage_path('logs/health_check.log');
             $message = '[' . now()->toIso8601String() . '] Health check log test';
             file_put_contents($logPath, $message . PHP_EOL, FILE_APPEND);
+
+            Log::stack(['single', 'daily'])->info($message);
 
             return [
                 'status' => 'UP',
