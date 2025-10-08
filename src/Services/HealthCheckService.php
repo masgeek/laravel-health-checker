@@ -218,12 +218,21 @@ class HealthCheckService
      */
     private function checkMigrations(): array
     {
-        $pendingMigrations = DB::select('SELECT * FROM migrations');
-
-        return [
-            'status' => count($pendingMigrations) > 0 ? 'UP' : 'DOWN',
-            'total_migrations' => count($pendingMigrations),
-        ];
+        $table = config('database.migrations.table');
+        try {
+            $pendingMigrations = DB::select("SELECT * FROM $table");
+            return [
+                'status' => count($pendingMigrations) > 0 ? 'UP' : 'DOWN',
+                'table_name' => $table,
+                'total_migrations' => count($pendingMigrations),
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => 'DOWN',
+                'table_name' => $table,
+                'error' => $e->getMessage(),
+            ];
+        }
     }
 
     private function checkEnvironmentConfig(): array
