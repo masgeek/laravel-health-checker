@@ -22,7 +22,7 @@ jobs:
           github_token: ${{ secrets.PAT_WITH_WORKFLOW_SCOPE }}
           #github_token: ${{ secrets.GITHUB_TOKEN }}
           title: 'Next release'
-          reviewer: ${{ github.actor }}
+          #reviewer: ${{ github.actor }}
           assignee: ${{ github.actor }}
           target_branch: main
           label: automatic,release
