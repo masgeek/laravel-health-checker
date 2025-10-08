@@ -19,12 +19,12 @@ jobs:
       - name: Create pull request
         uses: devops-infra/action-pull-request@v0.6.1
         with:
-          #github_token: ${{ secrets.PAT_WITH_WORKFLOW_SCOPE }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.PAT_WITH_WORKFLOW_SCOPE }}
+          #github_token: ${{ secrets.GITHUB_TOKEN }}
           title: 'Next release'
-          reviewer: ${{ github.actor }}
+          #reviewer: ${{ github.actor }}
           assignee: ${{ github.actor }}
           target_branch: main
           label: automatic,release
-          new_string: ${{ github.event.commits[0].message }}
+          new_string: ${{ github.event.head_commit.message || github.sha }}
           get_diff: true
