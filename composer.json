@@ -1,0 +1,38 @@
+{
+  "name": "masgeek/laravel-health-checker",
+  "description": "Laravel health checker helper",
+  "type": "library",
+  "license": "MIT",
+  "version": "1.0.0",
+  "autoload": {
+    "psr-4": {
+      "Masgeek\\HealthCheck\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Masgeek\\HealthCheck\\HealthCheckServiceProvider"
+      ]
+    }
+  },
+  "authors": [
+    {
+      "name": "Munywele Sammy Barasa",
+      "email": "sammy@munywele.co.ke"
+    }
+  ],
+  "require": {
+    "php": ">=8.2",
+    "illuminate/support": "^12.0",
+    "illuminate/http": "^12.0",
+    "illuminate/cache": "^12.0",
+    "illuminate/redis": "^12.0",
+    "illuminate/mail": "^12.0",
+    "illuminate/filesystem": "^12.0",
+    "illuminate/database": "^12.0",
+    "illuminate/queue": "^12.0",
+    "illuminate/log": "^12.0",
+    "guzzlehttp/guzzle": "^7.8"
+  }
+}
