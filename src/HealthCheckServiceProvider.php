@@ -21,7 +21,7 @@ class HealthCheckServiceProvider extends ServiceProvider
     {
         $this->publishes([
             $this->packageConfigPath() => $this->app->configPath('healthcheck.php'),
-        ], 'healthcheck-config');
+        ], 'config');
     }
 
     protected function loadRoutes(): void
