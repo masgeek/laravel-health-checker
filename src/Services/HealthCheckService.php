@@ -4,7 +4,6 @@ namespace Masgeek\HealthCheck\Services;
 
 use Exception;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -18,29 +17,40 @@ class HealthCheckService
     {
         $enabledChecks = config('healthcheck.checks', []);
 
+        $availableChecks = [
+            'env-config' => fn() => $this->checkEnvironmentConfig(),
+            'database' => fn() => $this->checkDatabase(),
+            'redis' => fn() => $this->checkRedis(),
+            'cache' => fn() => $this->checkCache(),
+            'storage' => fn() => $this->checkFileStorage(),
+            'queue' => fn() => $this->checkQueue(),
+            'mail' => fn() => $this->checkMailConnection(),
+            'disk-space' => fn() => $this->checkDiskSpace(),
+            'migrations' => fn() => $this->checkMigrations(),
+            'php-extensions' => fn() => $this->checkPHPExtensions(),
+            'loki' => fn() => $this->checkLoki(),
+            'logging' => fn() => $this->checkLogging(),
+        ];
+
         $results = [];
-        foreach ($enabledChecks as $key => $enabled) {
-            if (!$enabled) {
-                continue;
-            }
 
-            $method = 'check' . str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $key)));
-
-            if (method_exists($this, $method)) {
-                $results[$key] = $this->{$method}();
-            } else {
-                $results[$key] = ['status' => 'UNKNOWN', 'error' => 'Check not implemented'];
+        foreach ($availableChecks as $key => $callback) {
+            if (!empty($enabledChecks[$key])) {
+                $results[$key] = $callback();
             }
         }
 
-        $overallStatus = collect($results)->every(fn($r) => ($r['status'] ?? '') === 'UP');
+        $overallStatus = collect($results)
+                ->isNotEmpty() && collect($results)->every(fn($r) => ($r['status'] ?? '') === 'UP');
 
         return [
             'status' => $overallStatus ? 'healthy' : 'unhealthy',
-            'timestamp' => Carbon::now()->toIso8601String(),
+            'timestamp' => now()->toIso8601String(),
             'checks' => $results,
         ];
     }
+
+
     private function checkDatabase(): array
     {
         try {
@@ -70,7 +80,6 @@ class HealthCheckService
     }
 
 
-    /** @noinspection PhpUndefinedMethodInspection */
     private function checkRedis(): array
     {
         try {
@@ -200,19 +209,23 @@ class HealthCheckService
     }
 
 
+    /** @noinspection SqlResolve */
     private function checkMigrations(): array
     {
         $pendingMigrations = DB::select('SELECT * FROM migrations');
 
         return [
+            'status' => count($pendingMigrations) > 0 ? 'UP' : 'DOWN',
             'total_migrations' => count($pendingMigrations),
         ];
     }
 
     private function checkEnvironmentConfig(): array
     {
+        $inDebugMode = config('app.debug');
         return [
-            'debug_mode' => config('app.debug'),
+            'status' => $inDebugMode ? 'DOWN' : 'UP',
+            'debug_mode' => $inDebugMode,
             'timezone' => config('app.timezone'),
         ];
     }
