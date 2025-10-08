@@ -4,31 +4,41 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Enabled Health Checks
+    | Core System Checks
     |--------------------------------------------------------------------------
-    | Each check can be toggled via environment variables.
-    | Example: HEALTHCHECK_DATABASE=false
+    | These checks validate essential Laravel components.
     */
-    'checks' => [
+    'core' => [
         'database'     => env('HEALTHCHECK_DATABASE', true),
-        'redis'        => env('HEALTHCHECK_REDIS', false),
         'cache'        => env('HEALTHCHECK_CACHE', true),
-        'storage'      => env('HEALTHCHECK_STORAGE', true),
         'queue'        => env('HEALTHCHECK_QUEUE', true),
         'mail'         => env('HEALTHCHECK_MAIL', true),
-        'disk-space'   => env('HEALTHCHECK_DISK_SPACE', true),
-        'migrations'   => env('HEALTHCHECK_MIGRATIONS', false),
+        'migrations'   => env('HEALTHCHECK_MIGRATIONS', true),
         'env-config'   => env('HEALTHCHECK_ENV_CONFIG', true),
-        'loki'         => env('HEALTHCHECK_LOKI', false),
-        'logging'      => env('HEALTHCHECK_LOGGING', true),
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Loki Endpoint
+    | Infrastructure Checks
     |--------------------------------------------------------------------------
-    | Set via LOKI_URL in your .env file
+    | These checks validate external services and system resources.
     */
-    'loki_url' => env('LOKI_URL', null),
+    'infrastructure' => [
+        'redis'        => env('HEALTHCHECK_REDIS', false),
+        'storage'      => env('HEALTHCHECK_STORAGE', true),
+        'disk-space'   => env('HEALTHCHECK_DISK_SPACE', true),
+        'logging'      => env('HEALTHCHECK_LOGGING', true),
+        'loki'         => env('HEALTHCHECK_LOKI', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | External Service Configuration
+    |--------------------------------------------------------------------------
+    | URLs and credentials for external integrations.
+    */
+    'services' => [
+        'loki_url' => env('LOKI_URL', null),
+    ],
 
 ];
