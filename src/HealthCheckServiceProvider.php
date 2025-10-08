@@ -3,6 +3,7 @@
 namespace Masgeek\HealthCheck;
 
 use Illuminate\Support\ServiceProvider;
+use Masgeek\HealthCheck\Commands\CheckHealthCommand;
 
 class HealthCheckServiceProvider extends ServiceProvider
 {
@@ -10,6 +11,12 @@ class HealthCheckServiceProvider extends ServiceProvider
     {
         $this->publishConfig();
         $this->loadRoutes();
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                CheckHealthCommand::class,
+            ]);
+        }
     }
 
     public function register(): void
