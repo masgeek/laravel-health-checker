@@ -33,6 +33,6 @@
     "illuminate/database": "^12.0",
     "illuminate/queue": "^12.0",
     "illuminate/log": "^12.0",
-    "guzzlehttp/guzzle": "^7.8"
+    "guzzlehttp/guzzle": "^8.0"
   }
 }
