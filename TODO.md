@@ -25,11 +25,11 @@
 - [x] Use `try/finally` for cache/storage cleanup and check logging write results.
 - [x] Normalize and validate health-check configuration groups and supported check keys.
 - [x] Validate Redis response fields before indexing them.
-- [ ] Sanitize raw exception messages before returning detailed health-check responses.
+- [x] Hide detailed check results and raw exception messages from public responses by default; allow explicit opt-in.
 
 ## Security and operations
 
-- [ ] Add configurable route middleware and throttling; provide a minimal public liveness response and a protected detailed response.
+- [x] Add configurable route middleware and throttling; provide a minimal public liveness response and allow trusted monitoring to opt into details.
 - [ ] Remove or restrict automatic PR approval so it only occurs after required checks and trusted automation conditions.
 - [ ] Pin GitHub Actions to immutable commit SHAs and restrict workflow permissions.
 - [ ] Review the release workflow’s PAT usage and ensure release automation only runs on protected branches.

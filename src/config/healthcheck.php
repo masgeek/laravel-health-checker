@@ -37,6 +37,16 @@ return [
     |--------------------------------------------------------------------------
     | URLs and credentials for external integrations.
     */
+    'route' => [
+        'path' => env('HEALTHCHECK_PATH', 'health'),
+        'middleware' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('HEALTHCHECK_MIDDLEWARE', 'throttle:60,1'))
+        ))),
+    ],
+
+    'expose_details' => env('HEALTHCHECK_EXPOSE_DETAILS', false),
+
     'php_extensions' => [
         'pdo', 'mbstring', 'tokenizer', 'xml', 'ctype', 'json', 'bcmath',
     ],

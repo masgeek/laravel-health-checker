@@ -15,6 +15,12 @@ class HealthCheckController extends  Controller
     {
         $result = $this->service->run();
 
+        if (!config('healthcheck.expose_details', false)) {
+            $result['checks'] = collect($result['checks'])
+                ->map(fn(array $check) => ['status' => $check['status'] ?? 'DOWN'])
+                ->all();
+        }
+
         $status = $result['status'] === 'healthy' ? 200 : 500;
 
         return response()->json($result, $status);
