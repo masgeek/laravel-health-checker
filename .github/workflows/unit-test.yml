@@ -1,7 +1,6 @@
 name: UnitTests
 
 on:
-  push:
   pull_request:
     branches: [ main,develop ]
   workflow_dispatch:
