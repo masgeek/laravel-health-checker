@@ -8,6 +8,11 @@
       "Masgeek\\HealthCheck\\": "src/"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
   "extra": {
     "laravel": {
       "providers": [
@@ -34,5 +39,17 @@
     "illuminate/routing": "^12.0 || ^13.0",
     "illuminate/support": "^12.0 || ^13.0",
     "guzzlehttp/guzzle": "^7.8 || ^8.0"
+  },
+  "config": {
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
+  },
+  "require-dev": {
+    "orchestra/testbench": "^10.0 || ^11.0",
+    "pestphp/pest": "^3.0"
+  },
+  "scripts": {
+    "test": "vendor/bin/pest"
   }
 }

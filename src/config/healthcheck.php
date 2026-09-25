@@ -41,7 +41,7 @@ return [
         'path' => env('HEALTHCHECK_PATH', 'health'),
         'middleware' => array_values(array_filter(array_map(
             'trim',
-            explode(',', (string) env('HEALTHCHECK_MIDDLEWARE', 'throttle:60,1'))
+            explode(',', (string) env('HEALTHCHECK_MIDDLEWARE', 'throttle:60'))
         ))),
     ],
 

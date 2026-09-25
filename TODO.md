@@ -2,14 +2,14 @@
 
 ## Test infrastructure
 
-- [ ] Add Pest as a development dependency, create a test bootstrap, and configure the package test environment.
-- [ ] Add a test case for the service provider: config merging, route registration, config publishing, and console command registration.
-- [ ] Add tests for the result contract: `status`, ISO-8601 `timestamp`, `checks`, HTTP status mapping, and command exit codes.
-- [ ] Add tests for every enabled and disabled check in `HealthCheckService::run()` using Laravel facade/container fakes or mocks.
-- [ ] Add focused tests for cache, storage, and logging cleanup, including failure paths and temporary artifact removal.
-- [ ] Add integration tests for database and migration checks using a temporary SQLite database and the supported migration repository behavior.
-- [ ] Add tests for optional Redis, mail, and Loki checks with mocked services and bounded failure responses.
-- [ ] Add CI coverage for `composer validate`, `php -l`, and the Pest suite across supported PHP and Laravel versions.
+- [x] Add Pest as a development dependency, create a test bootstrap, and configure the package test environment.
+- [x] Add a test case for the service provider: config merging, route registration, config publishing, and console command registration.
+- [x] Add tests for the result contract: `status`, ISO-8601 `timestamp`, `checks`, HTTP status mapping, and command exit codes.
+- [x] Add tests for every available check and disabled-check selection in `HealthCheckService::run()` using Laravel facade/container fakes or mocks.
+- [x] Add focused tests for cache and storage cleanup, plus logging output behavior and failure paths.
+- [x] Add SQLite database tests and migration status tests using the migrator repository contract.
+- [x] Add tests for optional Redis, mail, and Loki checks with mocked services and bounded failure responses.
+- [x] Add CI coverage for `composer validate`, `php -l`, and the Pest suite across supported PHP and Laravel versions.
 
 ## Correctness and reliability
 
