@@ -6,24 +6,27 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+  
 jobs:
   bump-tag-version:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
     concurrency:
       cancel-in-progress: true
       group: bump-version-${{ github.ref }}
     steps:
-      - uses: actions/checkout@v5.1.0
+      - uses: actions/checkout@v5
       - name: Generate Tag
         id: tag_version
-        uses: masgeek/github-tag-action@6.1
+        uses: masgeek/github-tag-action@release
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           tag_prefix: ""
           create_annotated_tag: true
 
       - name: Create a GitHub release
-        uses: ncipollo/release-action@v1.21.0
+        uses: ncipollo/release-action@v1.16.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.tag_version.outputs.new_tag }}
