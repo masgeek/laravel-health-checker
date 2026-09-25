@@ -1,17 +1,19 @@
-<?php /** @noinspection PhpUndefinedFunctionInspection */
+<?php
+
+/** @noinspection PhpUndefinedFunctionInspection */
 
 namespace Masgeek\HealthCheck\Services;
 
 use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
@@ -22,23 +24,23 @@ class HealthCheckService
         $enabledChecks = collect([
             config('healthcheck.core', []),
             config('healthcheck.infrastructure', []),
-        ])->filter(fn($group) => is_array($group))
-            ->flatMap(fn(array $group) => $group)
-            ->filter(fn($enabled) => (bool) $enabled);
+        ])->filter(fn ($group) => is_array($group))
+            ->flatMap(fn (array $group) => $group)
+            ->filter(fn ($enabled) => (bool) $enabled);
 
         $availableChecks = [
-            'env-config' => fn() => $this->checkEnvironmentConfig(),
-            'database' => fn() => $this->checkDatabase(),
-            'redis' => fn() => $this->checkRedis(),
-            'cache' => fn() => $this->checkCache(),
-            'storage' => fn() => $this->checkFileStorage(),
-            'queue' => fn() => $this->checkQueue(),
-            'mail' => fn() => $this->checkMailConnection(),
-            'disk-space' => fn() => $this->checkDiskSpace(),
-            'migrations' => fn() => $this->checkMigrations(),
-            'php-extensions' => fn() => $this->checkPHPExtensions(),
-            'loki' => fn() => $this->checkLoki(),
-            'logging' => fn() => $this->checkLogging(),
+            'env-config' => fn () => $this->checkEnvironmentConfig(),
+            'database' => fn () => $this->checkDatabase(),
+            'redis' => fn () => $this->checkRedis(),
+            'cache' => fn () => $this->checkCache(),
+            'storage' => fn () => $this->checkFileStorage(),
+            'queue' => fn () => $this->checkQueue(),
+            'mail' => fn () => $this->checkMailConnection(),
+            'disk-space' => fn () => $this->checkDiskSpace(),
+            'migrations' => fn () => $this->checkMigrations(),
+            'php-extensions' => fn () => $this->checkPHPExtensions(),
+            'loki' => fn () => $this->checkLoki(),
+            'logging' => fn () => $this->checkLogging(),
         ];
 
         $results = [];
@@ -50,7 +52,7 @@ class HealthCheckService
         }
 
         $overallStatus = collect($results)
-                ->isNotEmpty() && collect($results)->every(fn($r) => ($r['status'] ?? '') === 'UP');
+                ->isNotEmpty() && collect($results)->every(fn ($r) => ($r['status'] ?? '') === 'UP');
 
         return [
             'status' => $overallStatus ? 'healthy' : 'unhealthy',
@@ -80,7 +82,7 @@ class HealthCheckService
                     ->where('name', 'not like', 'sqlite_%')
                     ->count(),
                 'sqlsrv' => $connection->table('sys.tables')
-                    ->when($schema, fn($query) => $query->whereRaw('schema_id = (select schema_id from sys.schemas where name = ?)', [$schema]))
+                    ->when($schema, fn ($query) => $query->whereRaw('schema_id = (select schema_id from sys.schemas where name = ?)', [$schema]))
                     ->count(),
                 default => throw new Exception("Unsupported database driver: {$platform}"),
             };
@@ -246,7 +248,7 @@ class HealthCheckService
         }
     }
 
-    private function formatBytes(int $bytes, int $precision = 0): string
+    private function formatBytes(int|float $bytes, int $precision = 0): string
     {
         $units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
         $bytes = max($bytes, 0);
@@ -297,8 +299,8 @@ class HealthCheckService
             'pdo', 'mbstring', 'tokenizer', 'xml', 'ctype', 'json', 'bcmath',
         ]);
         $extensionStatus = collect($requiredExtensions)
-            ->filter(fn($extension) => is_string($extension))
-            ->mapWithKeys(fn(string $extension) => [$extension => extension_loaded($extension)])
+            ->filter(fn ($extension) => is_string($extension))
+            ->mapWithKeys(fn (string $extension) => [$extension => extension_loaded($extension)])
             ->all();
 
         return [

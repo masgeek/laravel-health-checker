@@ -26,6 +26,11 @@
       "email": "sammy@munywele.co.ke"
     }
   ],
+  "config": {
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
+  },
   "require": {
     "php": ">=8.2",
     "illuminate/cache": "^12.0 || ^13.0",
@@ -40,16 +45,16 @@
     "illuminate/support": "^12.0 || ^13.0",
     "guzzlehttp/guzzle": "^7.8 || ^8.0"
   },
-  "config": {
-    "allow-plugins": {
-      "pestphp/pest-plugin": true
-    }
-  },
   "require-dev": {
+    "friendsofphp/php-cs-fixer": "^3.75",
     "orchestra/testbench": "^10.0 || ^11.0",
-    "pestphp/pest": "^3.0"
+    "pestphp/pest": "^3.0",
+    "phpstan/phpstan": "^2.1"
   },
   "scripts": {
+    "analyse": "vendor/bin/phpstan analyse",
+    "format": "vendor/bin/php-cs-fixer fix",
+    "lint": "vendor/bin/php-cs-fixer check --diff",
     "test": "vendor/bin/pest"
   }
 }

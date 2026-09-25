@@ -36,10 +36,11 @@ jobs:
       - name: Check PHP syntax
         run: while IFS= read -r -d '' file; do php -l "$file"; done < <(find src -name '*.php' -print0)
 
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse
+
+      - name: Run PHP-CS-Fixer
+        run: vendor/bin/php-cs-fixer check --diff
+
       - name: Run Pest
-        run: |
-          if [ -x vendor/bin/pest ]; then
-            vendor/bin/pest
-          else
-            echo "Pest is not configured yet."
-          fi
+        run: vendor/bin/pest

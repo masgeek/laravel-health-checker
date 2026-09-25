@@ -2,7 +2,6 @@
 
 namespace Masgeek\HealthCheck\Commands;
 
-
 use Illuminate\Console\Command;
 use Masgeek\HealthCheck\Services\HealthCheckService;
 
@@ -48,10 +47,10 @@ class CheckHealthCommand extends Command
         foreach ($result['checks'] as $name => $check) {
             $status = $check['status'] ?? 'N/A';
             $statusEmoji = $status === 'UP' ? '🟢' : '🔴';
-            $this->line(sprintf("%s %-15s %s", $statusEmoji, ucfirst($name), $status));
+            $this->line(sprintf('%s %-15s %s', $statusEmoji, ucfirst($name), $status));
 
             if (isset($check['error'])) {
-                $this->line("   ↳ Error: " . $check['error']);
+                $this->line('   ↳ Error: ' . $check['error']);
             }
         }
 
