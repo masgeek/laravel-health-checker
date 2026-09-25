@@ -4,20 +4,19 @@ on:
     branches:
       - 'main'
   workflow_dispatch:
-
+permissions:
+  contents: write
 jobs:
   bump-tag-version:
     runs-on: ubuntu-24.04
-    permissions:
-      contents: write
     concurrency:
       cancel-in-progress: true
       group: bump-version-${{ github.ref }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5.1.0
       - name: Generate Tag
         id: tag_version
-        uses: masgeek/github-tag-action@release
+        uses: masgeek/github-tag-action@6.1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           tag_prefix: ""

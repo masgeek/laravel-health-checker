@@ -2,7 +2,6 @@
 
 namespace Masgeek\HealthCheck\Commands;
 
-
 use Illuminate\Console\Command;
 use Masgeek\HealthCheck\Services\HealthCheckService;
 
@@ -35,8 +34,8 @@ class CheckHealthCommand extends Command
         $result = $service->run();
 
         if ($this->option('json')) {
-            $this->line(json_encode($result, JSON_PRETTY_PRINT));
-            return 0;
+            $this->line(json_encode($result, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
+            return $result['status'] === 'healthy' ? 0 : 1;
         }
 
         $overallStatus = $result['status'] ?? 'unknown';
@@ -48,10 +47,10 @@ class CheckHealthCommand extends Command
         foreach ($result['checks'] as $name => $check) {
             $status = $check['status'] ?? 'N/A';
             $statusEmoji = $status === 'UP' ? '🟢' : '🔴';
-            $this->line(sprintf("%s %-15s %s", $statusEmoji, ucfirst($name), $status));
+            $this->line(sprintf('%s %-15s %s', $statusEmoji, ucfirst($name), $status));
 
             if (isset($check['error'])) {
-                $this->line("   ↳ Error: " . $check['error']);
+                $this->line('   ↳ Error: ' . $check['error']);
             }
         }
 
