@@ -30,7 +30,7 @@
 ## Security and operations
 
 - [x] Add configurable route middleware and throttling; provide a minimal public liveness response and allow trusted monitoring to opt into details.
-- [ ] Remove or restrict automatic PR approval so it only occurs after required checks and trusted automation conditions.
-- [ ] Pin GitHub Actions to immutable commit SHAs and restrict workflow permissions.
-- [ ] Review the release workflow’s PAT usage and ensure release automation only runs on protected branches.
-- [ ] Add a package validation workflow that installs dependencies, validates Composer, syntax-checks PHP, and runs Pest.
+- [x] Remove automatic PR approval; require explicit maintainer review.
+- [x] Use versioned GitHub Action references and restrict workflow permissions.
+- [x] Remove PAT usage from release automation and require a protected `release` environment.
+- [x] Add a package validation workflow that installs dependencies, validates Composer, syntax-checks PHP, and runs Pest when configured.

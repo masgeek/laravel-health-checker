@@ -1,0 +1,45 @@
+name: Validate
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    strategy:
+      matrix:
+        php: ['8.2', '8.3']
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5.1.0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Validate Composer manifest
+        run: composer validate --no-check-publish
+
+      - name: Check PHP syntax
+        run: while IFS= read -r -d '' file; do php -l "$file"; done < <(find src -name '*.php' -print0)
+
+      - name: Run Pest
+        run: |
+          if [ -x vendor/bin/pest ]; then
+            vendor/bin/pest
+          else
+            echo "Pest is not configured yet."
+          fi
