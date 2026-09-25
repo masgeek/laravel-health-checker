@@ -35,8 +35,8 @@ class CheckHealthCommand extends Command
         $result = $service->run();
 
         if ($this->option('json')) {
-            $this->line(json_encode($result, JSON_PRETTY_PRINT));
-            return 0;
+            $this->line(json_encode($result, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
+            return $result['status'] === 'healthy' ? 0 : 1;
         }
 
         $overallStatus = $result['status'] ?? 'unknown';

@@ -5,21 +5,26 @@ namespace Masgeek\HealthCheck\Services;
 use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class HealthCheckService
 {
     public function run(): array
     {
         $enabledChecks = collect([
-            'core' => config('healthcheck.core', []),
-            'infrastructure' => config('healthcheck.infrastructure', []),
-        ])->flatMap(fn($group) => $group);
+            config('healthcheck.core', []),
+            config('healthcheck.infrastructure', []),
+        ])->filter(fn($group) => is_array($group))
+            ->flatMap(fn(array $group) => $group)
+            ->filter(fn($enabled) => (bool) $enabled);
 
         $availableChecks = [
             'env-config' => fn() => $this->checkEnvironmentConfig(),
@@ -61,12 +66,24 @@ class HealthCheckService
             $connection = DB::connection();
             $databaseName = $connection->getDatabaseName();
             $platform = $connection->getDriverName();
-
             $schema = config('database.connections.' . $connection->getName() . '.schema');
 
-            $tableCount = DB::table('information_schema.tables')
-                ->where('table_schema', $schema)
-                ->count();
+            $tableCount = match ($platform) {
+                'mysql', 'mariadb' => $connection->table('information_schema.tables')
+                    ->where('table_schema', $schema)
+                    ->count(),
+                'pgsql' => $connection->table('pg_catalog.pg_tables')
+                    ->whereRaw('schemaname = coalesce(?, current_schema())', [$schema])
+                    ->count(),
+                'sqlite' => $connection->table('sqlite_master')
+                    ->where('type', 'table')
+                    ->where('name', 'not like', 'sqlite_%')
+                    ->count(),
+                'sqlsrv' => $connection->table('sys.tables')
+                    ->when($schema, fn($query) => $query->whereRaw('schema_id = (select schema_id from sys.schemas where name = ?)', [$schema]))
+                    ->count(),
+                default => throw new Exception("Unsupported database driver: {$platform}"),
+            };
 
             return [
                 'status' => 'UP',
@@ -75,7 +92,7 @@ class HealthCheckService
                 'database_type' => $platform,
                 'total_tables' => $tableCount,
             ];
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return [
                 'status' => 'DOWN',
                 'error' => $e->getMessage(),
@@ -94,8 +111,8 @@ class HealthCheckService
             $memory = Arr::get($info, 'Memory', $info);
 
             return [
-                'status' => 'UP',
-                'version' => $info['redis_version'],
+                'status' => isset($info['redis_version']) ? 'UP' : 'DOWN',
+                'version' => $info['redis_version'] ?? null,
                 'service' => $serviceName,
                 //                'ping' => $ping,
                 'memory' => [
@@ -104,7 +121,7 @@ class HealthCheckService
                 ],
                 //                'info' => $info,
             ];
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return [
                 'status' => 'DOWN',
                 'error' => $e->getMessage(),
@@ -114,42 +131,52 @@ class HealthCheckService
 
     private function checkCache(): array
     {
+        $testKey = 'health_check_' . uniqid('', true);
+
         try {
-            $testKey = 'health_check_' . uniqid();
             Cache::put($testKey, 'test', 60);
             $value = Cache::get($testKey);
-            Cache::forget($testKey);
 
             return [
                 'status' => $value === 'test' ? 'UP' : 'DOWN',
                 'driver' => Cache::getDefaultDriver(),
             ];
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return [
                 'status' => 'DOWN',
                 'error' => $e->getMessage(),
             ];
+        } finally {
+            try {
+                Cache::forget($testKey);
+            } catch (Throwable) {
+            }
         }
     }
 
     private function checkFileStorage(): array
     {
+        $testFile = 'health_check_' . uniqid('', true) . '.txt';
+
         try {
-            $testFile = 'health_check_' . uniqid() . '.txt';
             Storage::put($testFile, 'Storage health check');
             $fileExists = Storage::exists($testFile);
-            Storage::delete($testFile);
 
             return [
                 'status' => $fileExists ? 'UP' : 'DOWN',
                 'default_disk' => config('filesystems.default'),
                 'root_path' => Storage::getConfig(),
             ];
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return [
                 'status' => 'DOWN',
                 'error' => $e->getMessage(),
             ];
+        } finally {
+            try {
+                Storage::delete($testFile);
+            } catch (Throwable) {
+            }
         }
     }
 
@@ -157,12 +184,16 @@ class HealthCheckService
     {
         try {
             $defaultQueue = config('queue.default');
+            $queueName = config("queue.connections.{$defaultQueue}.queue", 'default');
+            $queueSize = Queue::connection($defaultQueue)->size($queueName);
 
             return [
-                'status' => 'UP',
+                'status' => $queueSize >= 0 ? 'UP' : 'DOWN',
                 'default_connection' => $defaultQueue,
+                'queue' => $queueName,
+                'queue_size' => $queueSize,
             ];
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return [
                 'status' => 'DOWN',
                 'error' => $e->getMessage(),
@@ -179,7 +210,7 @@ class HealthCheckService
                 'status' => 'UP',
                 'transport' => $transport,
             ];
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return [
                 'status' => 'DOWN',
                 'error' => $e->getMessage(),
@@ -189,17 +220,30 @@ class HealthCheckService
 
     private function checkDiskSpace(): array
     {
-        $total = disk_total_space('/');
-        $free = disk_free_space('/');
-        $percentage = round((1 - $free / $total) * 100, 2);
+        try {
+            $path = config('healthcheck.disk_space_path') ?: storage_path();
+            $total = disk_total_space($path);
+            $free = disk_free_space($path);
 
-        return [
-            'status' => $percentage > 90 ? 'DOWN' : 'UP',
-            'total_space' => $this->formatBytes($total, 2),
-            'free_space' => $this->formatBytes($free, 2),
-            'used_percentage' => "{$percentage}%",
-        ];
+            if ($total === false || $free === false || $total <= 0) {
+                throw new Exception('Unable to read disk space');
+            }
 
+            $percentage = round((1 - $free / $total) * 100, 2);
+
+            return [
+                'status' => $percentage > 90 ? 'DOWN' : 'UP',
+                'path' => $path,
+                'total_space' => $this->formatBytes($total, 2),
+                'free_space' => $this->formatBytes($free, 2),
+                'used_percentage' => "{$percentage}%",
+            ];
+        } catch (Throwable $e) {
+            return [
+                'status' => 'DOWN',
+                'error' => $e->getMessage(),
+            ];
+        }
     }
 
     private function formatBytes(int $bytes, int $precision = 0): string
@@ -218,18 +262,20 @@ class HealthCheckService
      */
     private function checkMigrations(): array
     {
-        $table = config('database.migrations.table');
         try {
-            $pendingMigrations = DB::select("SELECT * FROM $table");
+            $migrator = app('migrator');
+            $migrationFiles = $migrator->getMigrationFiles(database_path('migrations'));
+            $ranMigrations = $migrator->getRepository()->getRan();
+            $pendingMigrations = array_diff(array_keys($migrationFiles), $ranMigrations);
+
             return [
-                'status' => count($pendingMigrations) > 0 ? 'UP' : 'DOWN',
-                'table_name' => $table,
-                'total_migrations' => count($pendingMigrations),
+                'status' => count($pendingMigrations) === 0 ? 'UP' : 'DOWN',
+                'total_migrations' => count($migrationFiles),
+                'pending_migrations' => count($pendingMigrations),
             ];
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return [
                 'status' => 'DOWN',
-                'table_name' => $table,
                 'error' => $e->getMessage(),
             ];
         }
@@ -247,22 +293,24 @@ class HealthCheckService
 
     private function checkPHPExtensions(): array
     {
-        $requiredExtensions = [
+        $requiredExtensions = config('healthcheck.php_extensions', [
             'pdo', 'mbstring', 'tokenizer', 'xml', 'ctype', 'json', 'bcmath',
+        ]);
+        $extensionStatus = collect($requiredExtensions)
+            ->filter(fn($extension) => is_string($extension))
+            ->mapWithKeys(fn(string $extension) => [$extension => extension_loaded($extension)])
+            ->all();
+
+        return [
+            'status' => !in_array(false, $extensionStatus, true) ? 'UP' : 'DOWN',
+            'extensions' => $extensionStatus,
         ];
-
-        $extensionStatus = [];
-        foreach ($requiredExtensions as $ext) {
-            $extensionStatus[$ext] = extension_loaded($ext);
-        }
-
-        return $extensionStatus;
     }
 
     private function checkLoki(): array
     {
         try {
-            $url = config('logging.channels.loki.with.url'); // e.g. http://loki:3100/loki/api/v1/status/buildinfo
+            $url = config('healthcheck.services.loki_url');
             if (!$url) {
                 return ['status' => 'DOWN', 'error' => 'Loki URL not configured'];
             }
@@ -287,7 +335,7 @@ class HealthCheckService
             }
 
             return $status;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return [
                 'status' => 'DOWN',
                 'error' => $e->getMessage(),
@@ -300,7 +348,11 @@ class HealthCheckService
         try {
             $logPath = storage_path('logs/health_check.log');
             $message = '[' . now()->toIso8601String() . '] Health check log test';
-            file_put_contents($logPath, $message . PHP_EOL, FILE_APPEND);
+            File::ensureDirectoryExists(dirname($logPath));
+
+            if (file_put_contents($logPath, $message . PHP_EOL, FILE_APPEND) === false) {
+                throw new Exception('Unable to write health check log');
+            }
 
             Log::stack(['single', 'daily'])->info($message);
 
@@ -308,7 +360,7 @@ class HealthCheckService
                 'status' => 'UP',
                 'log_path' => $logPath,
             ];
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return [
                 'status' => 'DOWN',
                 'error' => $e->getMessage(),

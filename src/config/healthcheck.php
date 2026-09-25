@@ -37,6 +37,12 @@ return [
     |--------------------------------------------------------------------------
     | URLs and credentials for external integrations.
     */
+    'php_extensions' => [
+        'pdo', 'mbstring', 'tokenizer', 'xml', 'ctype', 'json', 'bcmath',
+    ],
+
+    'disk_space_path' => env('HEALTHCHECK_DISK_SPACE_PATH', null),
+
     'services' => [
         'loki_url' => env('LOKI_URL', null),
     ],
