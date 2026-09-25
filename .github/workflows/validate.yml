@@ -43,4 +43,4 @@ jobs:
         run: vendor/bin/php-cs-fixer check --diff
 
       - name: Run Pest
-        run: vendor/bin/pest
+        run: vendor/bin/pest --no-configuration
