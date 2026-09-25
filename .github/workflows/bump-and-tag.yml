@@ -9,7 +9,6 @@ permissions:
 jobs:
   bump-tag-version:
     runs-on: ubuntu-24.04
-    environment: release
     concurrency:
       cancel-in-progress: true
       group: bump-version-${{ github.ref }}

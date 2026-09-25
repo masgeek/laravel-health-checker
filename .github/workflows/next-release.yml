@@ -9,7 +9,6 @@ permissions:
 jobs:
   action-pull-request:
     runs-on: ubuntu-24.04
-    environment: release
 
     concurrency:
       cancel-in-progress: true
