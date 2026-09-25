@@ -41,6 +41,11 @@ class HealthCheckService
             'php-extensions' => fn () => $this->checkPHPExtensions(),
             'loki' => fn () => $this->checkLoki(),
             'logging' => fn () => $this->checkLogging(),
+            'failed-jobs' => fn () => $this->checkFailedJobs(),
+            'outbound' => fn () => $this->checkOutbound(),
+            'certificate' => fn () => $this->checkCertificate(),
+            'config-cache' => fn () => $this->checkConfigCache(),
+            'build' => fn () => $this->checkBuild(),
         ];
 
         $results = [];
@@ -343,6 +348,151 @@ class HealthCheckService
                 'error' => $e->getMessage(),
             ];
         }
+    }
+
+    private function checkFailedJobs(): array
+    {
+        try {
+            $table = config('queue.failed.table', 'failed_jobs');
+            if (!is_string($table) || !preg_match('/^[A-Za-z0-9_.-]+$/', $table)) {
+                throw new Exception('Invalid failed jobs table name');
+            }
+
+            $connection = DB::connection();
+            $query = $connection->table($table);
+            $count = (clone $query)->count();
+            $columns = $connection->getSchemaBuilder()->getColumnListing($table);
+            $recent = null;
+            $oldest = null;
+
+            if (in_array('created_at', $columns, true)) {
+                $recent = (clone $query)
+                    ->where('created_at', '>=', now()->subMinutes((int) config('healthcheck.failed_jobs_recent_minutes', 60)))
+                    ->count();
+                $oldest = (clone $query)->orderBy('created_at')->value('created_at');
+            }
+
+            return [
+                'status' => $count === 0 ? 'UP' : 'DOWN',
+                'failed_jobs' => $count,
+                'recent_failed_jobs' => $recent,
+                'oldest_failed_at' => $oldest,
+            ];
+        } catch (Throwable $e) {
+            return [
+                'status' => 'DOWN',
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    private function checkOutbound(): array
+    {
+        try {
+            $urls = collect(config('healthcheck.services.outbound_urls', []))
+                ->filter(fn ($url) => is_string($url) && filter_var($url, FILTER_VALIDATE_URL))
+                ->values();
+            $timeout = (int) config('healthcheck.services.outbound_timeout', 3);
+
+            if ($urls->isEmpty()) {
+                return [
+                    'status' => 'DOWN',
+                    'error' => 'No outbound URLs configured',
+                ];
+            }
+
+            $results = $urls->mapWithKeys(function (string $url) use ($timeout) {
+                $response = Http::timeout($timeout)->get($url);
+
+                return [$url => $response->ok()];
+            });
+
+            return [
+                'status' => $results->every(fn (bool $reachable) => $reachable) ? 'UP' : 'DOWN',
+                'services' => $results->all(),
+            ];
+        } catch (Throwable $e) {
+            return [
+                'status' => 'DOWN',
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    private function checkCertificate(): array
+    {
+        try {
+            $host = config('healthcheck.services.certificate_host');
+            $port = (int) config('healthcheck.services.certificate_port', 443);
+            $warningDays = (int) config('healthcheck.services.certificate_warning_days', 14);
+
+            if (!is_string($host) || $host === '' || $port < 1 || $port > 65535) {
+                throw new Exception('Invalid certificate host or port');
+            }
+
+            $context = stream_context_create([
+                'ssl' => [
+                    'capture_peer_cert' => true,
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                ],
+            ]);
+            $stream = fopen("ssl://{$host}:{$port}", 'rb', false, $context);
+            if ($stream === false) {
+                throw new Exception('Unable to connect to certificate host');
+            }
+
+            $certificate = stream_context_get_params($stream)['options']['ssl']['peer_certificate'] ?? null;
+            fclose($stream);
+            $parsed = is_resource($certificate) || is_object($certificate)
+                ? openssl_x509_parse($certificate)
+                : false;
+
+            if (!is_array($parsed) || !isset($parsed['validTo_time_t'])) {
+                throw new Exception('Unable to read TLS certificate');
+            }
+
+            $expiresAt = (int) $parsed['validTo_time_t'];
+            $expiresInDays = (int) floor(($expiresAt - now()->getTimestamp()) / 86400);
+
+            return [
+                'status' => $expiresInDays > $warningDays ? 'UP' : 'DOWN',
+                'host' => $host,
+                'port' => $port,
+                'expires_at' => date(DATE_ATOM, $expiresAt),
+                'expires_in_days' => $expiresInDays,
+            ];
+        } catch (Throwable $e) {
+            return [
+                'status' => 'DOWN',
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    private function checkConfigCache(): array
+    {
+        $cached = app()->configurationIsCached();
+
+        return [
+            'status' => $cached ? 'UP' : 'DOWN',
+            'cached' => $cached,
+        ];
+    }
+
+    private function checkBuild(): array
+    {
+        $version = config('healthcheck.services.build_version');
+        $commit = config('healthcheck.services.build_commit');
+        $metadata = array_filter([
+            'version' => $version,
+            'commit' => $commit,
+        ]);
+
+        return [
+            'status' => $metadata !== [] ? 'UP' : 'DOWN',
+            'metadata' => $metadata,
+        ];
     }
 
     private function checkLogging(): array

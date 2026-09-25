@@ -38,11 +38,11 @@
 ## Potential health checks
 
 - [ ] Add scheduler heartbeat and last successful run detection.
-- [ ] Add failed-jobs count, age, and recent-failure detection.
+- [x] Add failed-jobs count, age, and recent-failure detection.
 - [ ] Add queue worker or Horizon heartbeat detection.
-- [ ] Add certificate expiration checks for configured HTTPS endpoints.
-- [ ] Add DNS and outbound connectivity checks with bounded timeouts.
-- [ ] Add application version and deployed commit/build metadata.
-- [ ] Add configuration cache readability and freshness checks.
+- [x] Add certificate expiration checks for configured HTTPS endpoints.
+- [x] Add DNS and outbound connectivity checks with bounded timeouts.
+- [x] Add application version and deployed commit/build metadata.
+- [x] Add configuration cache state checks.
 - [ ] Add memory, CPU/load, and filesystem inode checks.
 - [ ] Add scheduled-job freshness checks against configurable SLAs.
