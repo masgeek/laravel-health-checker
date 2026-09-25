@@ -1,30 +1,33 @@
 name: NextRelease
 on:
+  merge_group:
   push:
     branches:
-     - 'develop'
+      - 'develop'
+permissions:
+  contents: read
+  pull-requests: write
+  
 jobs:
-  action-pull-request:
-    runs-on: ubuntu-24.04
-
+  next-release-pr:
+    runs-on: ubuntu-26.04
     concurrency:
       cancel-in-progress: true
       group: release-${{ github.ref }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Create pull request
         uses: devops-infra/action-pull-request@v1.4.0
         with:
-          github_token: ${{ secrets.PAT_WITH_WORKFLOW_SCOPE }}
-          #github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           title: 'Next release'
-          #reviewer: ${{ github.actor }}
+          reviewer: ${{ github.actor }}
           assignee: ${{ github.actor }}
           target_branch: main
           label: automatic,release
-          new_string: ${{ github.event.head_commit.message || github.sha }}
+          new_string: ${{ github.event.commits[0].message }}
           get_diff: true

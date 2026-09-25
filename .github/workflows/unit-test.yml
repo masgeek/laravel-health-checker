@@ -1,0 +1,64 @@
+name: UnitTests
+
+on:
+  pull_request:
+    branches: [ main,develop ]
+  workflow_dispatch:
+
+jobs:
+  unit-test:
+    name: PHP ${{ matrix.php }} – ${{ matrix.dependency-version }}
+    runs-on: ubuntu-26.04
+
+    concurrency:
+      group: unit-test-${{ github.ref }}-${{ matrix.php }}
+      cancel-in-progress: true
+
+    strategy:
+      fail-fast: true
+      matrix:
+        php:
+          - '8.2'
+          - '8.3'
+          - '8.4'
+          - '8.5'
+        dependency-version:
+          - prefer-stable
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo, pdo_sqlite, sqlite3
+          coverage: none
+
+      - name: Cache Composer packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.composer/cache
+          key: composer-php${{ matrix.php }}-${{ matrix.dependency-version }}-${{ hashFiles('**/composer.json') }}
+          restore-keys: |
+            composer-php${{ matrix.php }}-${{ matrix.dependency-version }}-
+            composer-php${{ matrix.php }}-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Validate Composer manifest
+        run: composer validate --no-check-publish
+
+      - name: Check PHP syntax
+        run: while IFS= read -r -d '' file; do php -l "$file"; done < <(find src -name '*.php' -print0)
+
+      - name: Run composer analyse
+        run: composer run analyse
+
+      - name: Run Composer linter
+        run: composer run lint
+
+      - name: Run Composer Tests
+        run: composer run test
