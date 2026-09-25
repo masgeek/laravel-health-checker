@@ -54,11 +54,11 @@ jobs:
       - name: Check PHP syntax
         run: while IFS= read -r -d '' file; do php -l "$file"; done < <(find src -name '*.php' -print0)
 
-      - name: Run PHPStan
-        run: vendor/bin/phpstan analyse
+      - name: Run composer analyse
+        run: composer run analyse
 
-      - name: Run PHP-CS-Fixer
-        run: vendor/bin/php-cs-fixer check --diff
+      - name: Run Composer linter
+        run: composer run lint
 
-      - name: Test
+      - name: Run Composer Tests
         run: composer run test
