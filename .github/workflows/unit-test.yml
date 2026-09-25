@@ -15,7 +15,7 @@ jobs:
       cancel-in-progress: true
 
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         php:
           - '8.2'
