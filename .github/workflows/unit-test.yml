@@ -60,5 +60,5 @@ jobs:
       - name: Run PHP-CS-Fixer
         run: vendor/bin/php-cs-fixer check --diff
 
-      - name: Run Pest
-        run: vendor/bin/pest --no-configuration
+      - name: Test
+        run: composer run test
