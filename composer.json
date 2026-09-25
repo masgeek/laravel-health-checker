@@ -55,7 +55,6 @@
     "analyse": "vendor/bin/phpstan analyse",
     "format": "vendor/bin/php-cs-fixer fix",
     "lint": "vendor/bin/php-cs-fixer check --diff",
-    "test-b": "vendor/bin/pest --configuration phpunit.xml",
     "test": "vendor/bin/pest"
   }
 }
