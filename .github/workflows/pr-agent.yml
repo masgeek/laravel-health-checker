@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - name: PR Agent action step
-        uses: Codium-ai/pr-agent@v0.46.0
+        uses: Codium-ai/pr-agent@v0.50.0
         env:
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
